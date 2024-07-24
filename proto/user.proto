@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "userservice";
+option go_package = "pkg/user/grpc/userservice";
 
 message User {
   string id = 1;
