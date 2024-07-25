@@ -14,6 +14,7 @@ type GRPC struct {
 }
 
 func (G *GRPC) CreateUser(ctx context.Context, u *g.User) (*g.Reply, error) {
+
 	id, err := G.Services.CreateUser(ctx, u.Email)
 	if err != nil {
 		return &g.Reply{
@@ -27,12 +28,13 @@ func (G *GRPC) CreateUser(ctx context.Context, u *g.User) (*g.Reply, error) {
 		if err != nil {
 			log.Default().Println("error while logging new user", err.Error())
 		}
-		return &g.Reply{
-			Id:     id,
-			Status: "OK",
-		}, nil
 	}
+	return &g.Reply{
+		Id:     id,
+		Status: "OK",
+	}, nil
 }
+
 func (G *GRPC) DropUser(ctx context.Context, u *g.User) (*g.Reply, error) {
 	err := G.Services.DeleteUser(ctx, u.Id)
 	if err != nil {

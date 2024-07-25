@@ -2,7 +2,7 @@ package kafka
 
 import (
 	"context"
-	"encoding/json"
+	"github.com/IBM/sarama"
 	"gocloud.dev/pubsub"
 	"gocloud.dev/pubsub/kafkapubsub"
 	"grpc/pkg/user/logger"
@@ -16,6 +16,37 @@ const LOG topicName = "log"
 
 type Kafka struct {
 	topic map[topicName]*pubsub.Topic
+	async sarama.AsyncProducer
+}
+
+func NewAsyncProducer(kafkaBrokers []string) sarama.AsyncProducer {
+
+	cfg := sarama.NewConfig()
+	cfg.Producer.Return.Successes = true
+	cfg.Producer.Return.Errors = true
+	cfg.Producer.RequiredAcks = sarama.WaitForAll
+	cfg.Producer.Partitioner = sarama.NewCustomPartitioner()
+
+	producer, _ := sarama.NewAsyncProducer(kafkaBrokers, cfg)
+
+	go func() {
+		for {
+
+			err := <-producer.Errors()
+			if err != nil {
+				log.Println(err)
+			}
+		}
+	}()
+	go func() {
+		for {
+
+			msg := <-producer.Successes()
+			log.Println("SUCCESS ::: ", msg.Value)
+		}
+	}()
+
+	return producer
 }
 
 func (k Kafka) LoNewUser(ctx context.Context) error {
@@ -23,14 +54,20 @@ func (k Kafka) LoNewUser(ctx context.Context) error {
 	m["timestamp"] = time.Now().Unix()
 	m["message_type"] = "INFO"
 	m["message"] = "New user add"
-	bytes, err := json.Marshal(m)
-	if err != nil {
-		return err
+	//bytes, err := json.Marshal(m)
+	//if err != nil {
+	//	return err
+	//}
+	println("sendinhg")
+	//return k.topic[LOG].Send(ctx, &pubsub.Message{
+	//	Body: []byte("s"),
+	//})
+	bytes := []byte("helo")
+	k.async.Input() <- &sarama.ProducerMessage{
+		Topic: string(LOG),
+		Value: sarama.ByteEncoder(bytes),
 	}
-	return k.topic[LOG].Send(ctx, &pubsub.Message{
-		Body: bytes,
-	})
-
+	return nil
 }
 
 func (k Kafka) ShutDown(ctx context.Context) error {
@@ -48,7 +85,8 @@ var _ logger.Logger = &Kafka{}
 
 func NewKafka(kafkaBrokers []string) (*Kafka, error) {
 
-	kafka := &Kafka{topic: make(map[topicName]*pubsub.Topic)}
+	async := NewAsyncProducer(kafkaBrokers)
+	kafka := &Kafka{topic: make(map[topicName]*pubsub.Topic), async: async}
 	for _, name := range []topicName{
 		LOG,
 	} {

@@ -17,10 +17,10 @@ type Postgres struct {
 }
 
 func (p Postgres) CreateUser(ctx context.Context, user *model.UserDB) (int, error) {
-
-	stmt := `INSERT INTO users (email) values $1 RETURNING id`
+	println("sd")
+	stmt := `INSERT INTO users (email) values ($1) RETURNING id`
 	var id int
-	err := p.db.QueryRow(stmt, user.Email).Scan(id)
+	err := p.db.QueryRow(stmt, user.Email).Scan(&id)
 	if err != nil {
 		return 0, err
 	}
@@ -74,9 +74,19 @@ func NewPostgres(connStr string) (*Postgres, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
-		log.Fatal("error while upp %s   ", err.Error())
+	version, dirty, err := m.Version()
+	log.Printf("VERSIO :: %s \t DIRTY ::: %s \t ", version, dirty)
+	if version == 0 {
+
+		if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+			log.Fatal("error while upp %s   ", err.Error())
+		}
 	}
+	//if err = m.Force(1); err != nil {
+	//	println("MIGRATE", err.Error())
+	//}
+	//
+	println("MIGRATE")
 
 	return &Postgres{db: db}, nil
 
