@@ -42,12 +42,12 @@ func (r RedisClient) SetList(ctx context.Context, users []*model.User, limit, of
 
 func NewRedisClient(addr string, ttl time.Duration) (*RedisClient, error) {
 
-	opts, err := redis.ParseURL(addr)
-	if err != nil {
-		return nil, err
+	client := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
 
-	}
-	client := redis.NewClient(opts)
 	return &RedisClient{
 		redis: client,
 		ttl:   ttl,

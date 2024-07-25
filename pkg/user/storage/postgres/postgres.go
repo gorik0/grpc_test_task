@@ -74,7 +74,7 @@ func NewPostgres(connStr string) (*Postgres, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err := m.Up(); err != nil {
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
 		log.Fatal("error while upp %s   ", err.Error())
 	}
 
